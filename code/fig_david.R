@@ -153,3 +153,84 @@ plot_grid(fsubject, events,
           ncol = 2, rel_heights = c(2, 3), labels = "AUTO")
 save_plot(paste0(figs.dir, "/fig3.pdf"), last_plot(), ncol = 2,
           base_width = 4, base_height = 8)
+
+
+# event vertex distribution -----------------------------------------------
+
+theme_set(theme_cowplot())
+vd <- vertex.distribution(david.v2p$vertex, david.v2p[, .(subject, event)])
+vd <- mutate(vd, state = paste(subject, event))
+sd <- state.divergence(vd$f, vd$vertex, vd$state)
+ggplot(sd, aes(x = state.x, y = state.y)) +
+  geom_tile(aes(fill = JSD)) +
+  scale_fill_distiller(palette = "Greys") +
+  theme(axis.text.x = element_text(angle = 90))
+
+
+# correlation between knn and rate of change ------------------------------
+
+make.consecutive <- function(samples = david.samples) {
+  consecutive <- samples %>%
+    split(by = "subject") %>%
+    # lapply(function(df) {df[, day := sample(day)]; df}) %>%  # VALIDATE
+    lapply(function(df) pair.consecutive(df$sample, df$day)) %>%
+    rbindlist(idcol = "subject")
+  dm <- dlist2dm(jsds$sample.x, jsds$sample.y, jsds$jsd)
+  # use the knn of data point as potential
+  # potential <- dist2knn(dm, round(nrow(dm) / 10))
+  # potential <- data.frame(point = names(knn), potential = knn)
+  # alternatively recompute potential from vertex scaled knns
+  potential <- david.v2p[, .(potential = mean(scaled.knn)), by = point]
+  consecutive <- merge(consecutive, potential, by.x = "sample.x", by.y = "point")
+  consecutive <- merge(consecutive, potential, by.x = "sample.y", by.y = "point")
+  consecutive[, delta.day := time.y - time.x]
+  consecutive[, delta.potential := potential.y - potential.x]
+  merge(consecutive, jsds, by = c("sample.x", "sample.y"))
+}
+consecutive <- make.consecutive(david.samples)
+get.cor <- function(df = consecutive) {
+  df <- mutate(df, displacement = sqrt(jsd) / delta.day)
+  cor(df$potential.x, df$displacement)
+}
+emp.pearson <- get.cor(consecutive)
+ggplot(consecutive, aes(x = potential.x, y = sqrt(jsd) / delta.day)) +
+  geom_point(aes(color = subject)) +
+  ggtitle(paste("Pearson =", emp.pearson))
+nnulls <- 100
+null.data <- lapply(seq(nnulls), function(i) {
+  df <- david.samples %>%
+    split(by = "subject") %>%
+    lapply(function(df) {df[, day := sample(day)]; df}) %>%  # VALIDATE
+    rbindlist(idcol = "subject")
+  consec <- make.consecutive(df)
+})
+null.pearsons <- sapply(null.data, get.cor)
+ggplot(data.frame(null.pearsons), aes(x = null.pearsons)) +
+  # geom_density() +
+  geom_histogram() +
+  geom_vline(xintercept = emp.pearson, color = "blue") +
+  ggtitle(paste(nnulls, "time permutations"))
+
+
+# change in knn between consecutive samples vs knn of first sample --------
+
+get.cor <- function(df = consecutive) {
+  df <- mutate(df, roc = delta.potential / delta.day)
+  cor(df$potential.x, df$roc)
+}
+empirical.pearson <- get.cor(consecutive)
+ggplot(consecutive, aes(x = potential.x, y = delta.potential / delta.day)) +
+  geom_point(aes(color = subject)) +
+  ggtitle(paste("Pearson =", empirical.pearson))
+null.pearsons <- sapply(null.data, get.cor)
+ggplot(data.frame(null.pearsons), aes(x = null.pearsons)) +
+  geom_histogram() +
+  geom_vline(xintercept = empirical.pearson, color = "blue") +
+  ggtitle(paste(nnulls, "time permutations"))
+
+
+# # of descending vs ascending knn steps ----------------------------------
+
+
+ggplot(consecutive, aes(x = delta.knn < 0)) +
+  geom_bar(aes(fill = subject), position = "dodge")

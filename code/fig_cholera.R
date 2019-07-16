@@ -132,3 +132,50 @@ plot_grid(plot_grid(fstate, basin,
           ncol = 1)
 save_plot(last_plot(), filename = paste0(figs.dir, "/fig2.pdf"),
           ncol = 1, base_width = 8, base_height = 8)
+
+# event vertex distribution -----------------------------------------------
+
+vd <- vertex.distribution(cholera.v2p$vertex, cholera.v2p[, .(subject, diagnosis)])
+ggplot(vd, aes(x = vertex)) +
+  geom_col(aes(y = f, fill = diagnosis)) +
+  facet_wrap(~subject, scales = "free_y")
+
+state <- paste(vd$diagnosis, vd$subject)
+sd <- state.divergence(vd$f, vd$vertex, state)
+ggplot(sd, aes(x = state.x, y = state.y)) +
+  geom_tile(aes(fill = JSD)) +
+  scale_fill_distiller(palette = "Greys")
+
+
+# correlation between quasipotential and rate of change -------------------
+
+consecutive.samples <- gordon.samples %>%
+  split(by = "subject") %>%
+  lapply(function(df) pair.consecutive(df$sample, df$hour)) %>%
+  rbindlist(idcol = "subject")
+consecutive.samples[, delta.hour := time.y - time.x]
+consecutive.samples <- merge(consecutive.samples, jsd)
+consecutive.samples[, roc := jsd / delta.hour]
+ggplot(consecutive.samples[delta.hour <= 24], aes(x = delta.hour, y = jsd)) +
+  geom_point(aes(color = subject)) +
+  scale_y_log10()
+
+# make distance matrix and knn
+dm <- dlist2dm(jsd$sample.x, jsd$sample.y, jsd$jsd)
+knn <- dist2knn(dm, round(nrow(dm) / 10))
+knn <- data.frame(sample = names(knn), knn = knn)
+
+consecutive.samples <- merge(consecutive.samples, knn, by.x = "sample.x",
+                             by.y = "sample")
+consecutive.samples <- merge(consecutive.samples, knn, by.x = "sample.y",
+                             by.y = "sample")
+ggplot(consecutive.samples[delta.hour <= 24], aes(x = knn.x, y = roc)) +
+  geom_point(aes(color = subject)) #+
+  # scale_y_log10()
+
+
+# frequency in jumps of decreasing or increasing knn ----------------------
+
+consecutive.samples[, delta.knn := knn.y - knn.x]
+ggplot(consecutive.samples, aes(x = delta.knn / delta.hour)) +
+  stat_ecdf(aes(color = subject))

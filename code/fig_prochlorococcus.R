@@ -151,3 +151,16 @@ plot_grid(plot_grid(depth, basins, ncol = 2, labels = c("A", "B")),
           ncol = 1, rel_heights = c(2, 3))
 save_plot(paste0(figs.dir, "fig4.pdf"), last_plot(), ncol = 2,
           base_width = 4, base_height = 10)
+
+
+# correlation between knn and rate of change ------------------------------
+
+prochlorococcus.samples[, sample := paste(site, depth, month)]
+make.consecutive <- function(samples = prochlorococcus.samples) {
+  consecutive <- samples %>%
+    split(by = c("site", "depth")) %>%
+    # lapply(function(df) {df[, day := sample(day)]; df}) %>%  # VALIDATE
+    lapply(function(df) pair.consecutive(df$sample, df$month)) %>%
+    rbindlist(idcol = "site.depth")
+}
+consecutive <- make.consecutive(prochlorococcus.samples)

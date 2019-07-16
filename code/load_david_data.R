@@ -34,3 +34,4 @@ is.healthy <- function(event) {
   }
 }
 david.samples[, healthy := sapply(event, is.healthy)]
+jsds <- fread("jsds/david.txt")

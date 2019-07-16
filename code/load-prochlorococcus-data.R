@@ -51,3 +51,4 @@ prochlorococcus[, sample := paste(site, cruiseid, depth, sep = "-")]
 prochlorococcus[, c("temp", "sal") := lapply(list(temp, sal), as.numeric)]
 prochlorococcus.samples <- prochlorococcus[, -c("ecotype", "abundance")] %>%
   unique
+jsd <- fread("jsds/prochlorococcus.txt")
