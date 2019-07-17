@@ -164,12 +164,14 @@ ggplot(consecutive.samples[delta.hour <= 24], aes(x = delta.hour, y = jsd)) +
 dm <- dlist2dm(jsd$sample.x, jsd$sample.y, jsd$jsd)
 knn <- dist2knn(dm, round(nrow(dm) / 10))
 knn <- data.frame(sample = names(knn), knn = knn)
+# recalculate potential for each point from vertex potential
+# potential <- cholera.v2p[, .(potential = mean(scaled.knn)), by = point]
 
 consecutive.samples <- merge(consecutive.samples, knn, by.x = "sample.x",
                              by.y = "sample")
 consecutive.samples <- merge(consecutive.samples, knn, by.x = "sample.y",
                              by.y = "sample")
-ggplot(consecutive.samples[delta.hour <= 24], aes(x = knn.x, y = roc)) +
+ggplot(consecutive.samples[delta.hour <= 24], aes(x = knn.x, y = sqrt(jsd) / delta.hour)) +
   geom_point(aes(color = subject)) #+
   # scale_y_log10()
 
