@@ -155,12 +155,42 @@ save_plot(paste0(figs.dir, "fig4.pdf"), last_plot(), ncol = 2,
 
 # correlation between knn and rate of change ------------------------------
 
-prochlorococcus.samples[, sample := paste(site, depth, month)]
+prochlorococcus.samples[, sample := paste(site, cruiseid, depth, sep = "-")]
+potential <- prochlorococcus.v2p[, .(potential = mean(scaled.knn)), by = point]
 make.consecutive <- function(samples = prochlorococcus.samples) {
   consecutive <- samples %>%
     split(by = c("site", "depth")) %>%
     # lapply(function(df) {df[, day := sample(day)]; df}) %>%  # VALIDATE
     lapply(function(df) pair.consecutive(df$sample, df$month)) %>%
     rbindlist(idcol = "site.depth")
+  consecutive <- merge(consecutive, potential, by.x = "sample.x", by.y = "point")
+  consecutive <- merge(consecutive, potential, by.x = "sample.y", by.y = "point")
+  consecutive <- merge(consecutive, jsd, by = c("sample.x", "sample.y"))
+  consecutive[, displacement := sqrt(jsd)]
+  consecutive[, delta.month := time.y - time.x]
+  consecutive[, c("site", "depth") := tstrsplit(site.depth, split = "\\.")]
+  consecutive[, depth := as.numeric(depth)]
+  # omit consecutive samples within same month
+  consecutive <- consecutive[delta.month > 0]
+  consecutive
 }
 consecutive <- make.consecutive(prochlorococcus.samples)
+
+# randomized null model
+nnulls <- 100
+null.data <- lapply(seq(nnulls), function(i) {
+  d <- copy(prochlorococcus.samples)
+  d <- d[, month := sample(month), by = .(site, depth)]
+  d <- make.consecutive(d)
+})
+get.cor <- function(d) {
+  roc <- d$displacement / d$delta.month
+  cor(roc, d$potential.x)
+}
+emp.pearson <- get.cor(consecutive)
+ggplot(consecutive, aes(x = potential.x, y = displacement / delta.month)) +
+  geom_point(aes(color = site, alpha = depth)) +
+  # scale_color_distiller(palette = "Blues") +
+  # scale_x_log10() +
+  ggtitle(paste("Pearson =", emp.pearson))
+

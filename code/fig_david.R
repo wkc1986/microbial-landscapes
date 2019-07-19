@@ -179,7 +179,7 @@ make.consecutive <- function(samples = david.samples) {
   # use the knn of data point as potential
   # potential <- dist2knn(dm, round(nrow(dm) / 10))
   # potential <- data.frame(point = names(knn), potential = knn)
-  # alternatively recompute potential from vertex scaled knns
+  # alternativelyrecompute potential from vertex scaled knns
   potential <- david.v2p[, .(potential = mean(scaled.knn)), by = point]
   consecutive <- merge(consecutive, potential, by.x = "sample.x", by.y = "point")
   consecutive <- merge(consecutive, potential, by.x = "sample.y", by.y = "point")

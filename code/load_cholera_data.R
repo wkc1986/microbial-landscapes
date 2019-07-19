@@ -21,6 +21,6 @@ gordon[, hour := {
 gordon[, sample := paste(subject, diagnosis, id, sep = "_")]
 gordon.samples <- unique(gordon[, .(sample, subject, diagnosis, id, hour)])
 jsd.file <- "jsds/cholera.txt"
-if (exists(jsd.file)) {
+if (file.exists(jsd.file)) {
   jsd <- fread("jsds/cholera.txt")
 }

@@ -52,6 +52,6 @@ prochlorococcus[, c("temp", "sal") := lapply(list(temp, sal), as.numeric)]
 prochlorococcus.samples <- prochlorococcus[, -c("ecotype", "abundance")] %>%
   unique
 jsd.file <- "jsds/prochlorococcus.txt"
-if (exists(jsd.file)) {
+if (file.exists(jsd.file)) {
   jsd <- fread("jsds/prochlorococcus.txt")
 }
