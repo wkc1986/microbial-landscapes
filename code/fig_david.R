@@ -98,18 +98,57 @@ series <- last_plot()
 
 # distribs ----------------------------------------------------------------
 
+plot.basin.bars <- function(df) {
+  df <- df %>% 
+    group_by(event) %>% 
+    mutate(frac = N / sum(N)) %>% 
+    group_by(event, basin) %>% 
+    summarize(frac = sum(frac)) %>% 
+    ungroup() %>% 
+    filter(!is.na(basin)) 
+  # browser()
+  ggplot(df, aes(x = basin, y = frac)) +
+    geom_col() +
+    # facet_grid(event ~ .)
+    facet_wrap(~ event, ncol = 1)
+}
 
-david.sample.basins %>%
-  group_by(subject, event) %>%
-  mutate(frac = N / sum(N)) %>%
-  group_by(subject, event, basin) %>%
-  summarize(frac = sum(frac)) %>%
-  ggplot(aes(x = event)) +
-  geom_col(aes(y = frac, group = basin, fill = basin),
-           position = "stack") +
-  coord_flip() +
-  labs(y = "fraction samples") +
-  facet_grid(subject ~ ., scales = "free")
+# david.sample.basins %>%
+#   group_by(subject, event) %>%
+#   mutate(frac = N / sum(N)) %>%
+#   group_by(subject, event, basin) %>%
+#   summarize(frac = sum(frac)) %>%
+#   filter(!is.na(basin)) %>% 
+  # --- COLOR BAR ---
+  # ggplot(aes(x = event)) +
+  # geom_col(aes(y = frac, group = basin, fill = basin),
+  #          position = "stack") +
+  # coord_flip() +
+  # labs(y = "fraction samples") +
+  # facet_grid(subject ~ ., scales = "free")
+  # --- HEATMAP-ISH --- 
+  # ggplot(aes(x = basin, y = event)) +
+  # geom_tile(aes(fill = frac)) +
+  # # scale_fill_distiller(palette = "Greys", direction = -1) +
+  # facet_grid(subject ~ ., scales = "free")
+  # --- REGULAR BAR --- 
+  # ggplot(aes(x = basin, y = frac)) +
+  # geom_col() +
+  # facet_wrap(~ subject + event)
+
+plots <- david.sample.basins %>% 
+  mutate(event = factor(event, levels = c("US (pre)", "US (post)", "travel",
+                                          "travel + diarrhea 1",
+                                          "travel + diarrhea 2",
+                                          "pre-Salmonella",
+                                          "post-Salmonella",
+                                          "Salmonella"))) %>% 
+  as.data.table %>% 
+  split(by = "subject") %>% 
+  lapply(plot.basin.bars)
+plots[[1]] <- plots[[1]] + ggtitle("A")
+plots[[2]] <- plots[[2]] + ggtitle("B")
+plot_grid(plotlist = plots)
 distribs <- last_plot()
 
 # correlation function ----------------------------------------------------
@@ -232,5 +271,5 @@ ggplot(data.frame(null.pearsons), aes(x = null.pearsons)) +
 # # of descending vs ascending knn steps ----------------------------------
 
 
-ggplot(consecutive, aes(x = delta.knn < 0)) +
+ggplot(consecutive, aes(x = delta.potential < 0)) +
   geom_bar(aes(fill = subject), position = "dodge")

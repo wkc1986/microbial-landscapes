@@ -36,5 +36,5 @@ is.healthy <- function(event) {
 david.samples[, healthy := sapply(event, is.healthy)]
 jsd.file <- "jsds/david.txt"
 if (file.exists(jsd.file)) {
-  jsd <- fread("jsds/david.txt")
+  jsds <- fread("jsds/david.txt")
 }
