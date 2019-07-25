@@ -106,11 +106,13 @@ plot.basin.bars <- function(df) {
     summarize(frac = sum(frac)) %>% 
     ungroup() %>% 
     filter(!is.na(basin)) 
-  # browser()
   ggplot(df, aes(x = basin, y = frac)) +
     geom_col() +
-    # facet_grid(event ~ .)
-    facet_wrap(~ event, ncol = 1)
+    facet_wrap(~ event, ncol = 1) +
+    labs(x = "state", y = "frequency") +
+    scale_x_discrete(drop = FALSE) +
+    scale_y_continuous(breaks = c(0, 0.2, 0.4)) +
+    theme(axis.text.x = element_blank())
 }
 
 # david.sample.basins %>%
@@ -149,6 +151,8 @@ plots <- david.sample.basins %>%
 plots[[1]] <- plots[[1]] + ggtitle("A")
 plots[[2]] <- plots[[2]] + ggtitle("B")
 plot_grid(plotlist = plots)
+# plot_grid(plots[[1]],
+#           plot_grid(plots[[2]], NULL, nrow = 2, rel_heights = c(2, 1)))
 distribs <- last_plot()
 
 # correlation function ----------------------------------------------------
