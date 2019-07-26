@@ -98,29 +98,12 @@ series <- last_plot()
 
 # distribs ----------------------------------------------------------------
 
-plot.basin.bars <- function(df) {
-  df <- df %>% 
-    group_by(event) %>% 
-    mutate(frac = N / sum(N)) %>% 
-    group_by(event, basin) %>% 
-    summarize(frac = sum(frac)) %>% 
-    ungroup() %>% 
-    filter(!is.na(basin)) 
-  ggplot(df, aes(x = basin, y = frac)) +
-    geom_col() +
-    facet_wrap(~ event, ncol = 1) +
-    labs(x = "state", y = "frequency") +
-    scale_x_discrete(drop = FALSE) +
-    scale_y_continuous(breaks = c(0, 0.2, 0.4)) +
-    theme(axis.text.x = element_blank())
-}
-
 # david.sample.basins %>%
 #   group_by(subject, event) %>%
 #   mutate(frac = N / sum(N)) %>%
 #   group_by(subject, event, basin) %>%
 #   summarize(frac = sum(frac)) %>%
-#   filter(!is.na(basin)) %>% 
+#   filter(!is.na(basin)) %>%
   # --- COLOR BAR ---
   # ggplot(aes(x = event)) +
   # geom_col(aes(y = frac, group = basin, fill = basin),
@@ -128,35 +111,38 @@ plot.basin.bars <- function(df) {
   # coord_flip() +
   # labs(y = "fraction samples") +
   # facet_grid(subject ~ ., scales = "free")
-  # --- HEATMAP-ISH --- 
+  # --- HEATMAP-ISH ---
   # ggplot(aes(x = basin, y = event)) +
   # geom_tile(aes(fill = frac)) +
   # # scale_fill_distiller(palette = "Greys", direction = -1) +
   # facet_grid(subject ~ ., scales = "free")
-  # --- REGULAR BAR --- 
+  # --- REGULAR BAR ---
   # ggplot(aes(x = basin, y = frac)) +
   # geom_col() +
   # facet_wrap(~ subject + event)
 
-plots <- david.sample.basins %>% 
-  mutate(event = factor(event, levels = c("US (pre)", "US (post)", "travel",
-                                          "travel + diarrhea 1",
-                                          "travel + diarrhea 2",
-                                          "pre-Salmonella",
-                                          "post-Salmonella",
-                                          "Salmonella"))) %>% 
-  as.data.table %>% 
-  split(by = "subject") %>% 
-  lapply(plot.basin.bars)
-plots[[1]] <- plots[[1]] + ggtitle("A")
-plots[[2]] <- plots[[2]] + ggtitle("B")
-plot_grid(plotlist = plots)
-# plot_grid(plots[[1]],
-#           plot_grid(plots[[2]], NULL, nrow = 2, rel_heights = c(2, 1)))
+david.sample.basins %>%
+  group_by(subject, event, basin) %>%
+  summarise(N = sum(N)) %>%
+  group_by(subject, event) %>%
+  mutate(frac = N / sum(N)) %>%
+  mutate(label = factor(paste(subject, event),
+                        levels = c("A US (pre)", "A US (post)", "A travel",
+                                   "A travel + diarrhea 1",
+                                   "A travel + diarrhea 2",
+                                   "B pre-Salmonella", "B post-Salmonella",
+                                   "B Salmonella"))) %>%
+  filter(!is.na(basin)) %>%
+  ggplot(aes(x = basin, y = frac)) +
+  geom_col() +
+  facet_wrap(~ label, dir = "v", nrow = 5) +
+  labs(x = "state", y = "frequency") +
+  scale_y_continuous(breaks = c(0, 0.4)) +
+  theme(axis.text.x = element_blank())
+
 distribs <- last_plot()
 
 # correlation function ----------------------------------------------------
-
 
 david.persistence <- david.v2p %>%
   split(by = c("subject", "event", "healthy")) %>%
@@ -166,25 +152,37 @@ david.persistence <- david.v2p %>%
   .[, N := uniqueN(delta.t), by = .(id, basin)] %>%
   .[, c("subject", "event", "healthy") := tstrsplit(id, "\\.",
                                                     type.convert = TRUE)] %>%
-  .[, id := NULL]
-theme_set(theme_cowplot() + theme(legend.position = "none",
+  .[, id := NULL] %>%
+  .[!is.na(basin)]
+
+# plot correlation for only the 3 most frequent basins per  phenotype
+rank.states <- david.v2p[, .(count = .N), by = .(subject, event, basin)]
+rank.states <- rank.states[!is.na(basin)]
+rank.states[, rank := frank(-count), by = .(subject, event)]
+top <- rank.states[rank <= 3]
+setkey(david.persistence, subject, event, basin)
+setkey(top, subject, event, basin)
+david.persistence <- david.persistence[top]
+
+theme_set(theme_cowplot() + theme(#legend.position = "none",
                                   axis.text = element_text(size = title.size),
                                   axis.title = element_text(size = title.size),
                                   strip.text = element_text(size = title.size)))
 graphic.size <- 0.5
 ggplot(david.persistence[!is.na(basin) & healthy],
-       aes(x = delta.t, y = f, color = basin)) +
-  geom_point(data = function(df) filter(df, N <= 10),
+       aes(x = delta.t, y = f)) +
+  geom_point(#data = function(df) filter(df, N <= 10),
              alpha = 0.5, size = graphic.size) +
-  geom_smooth(aes(color = basin, fill = basin),
-              data = function(df) filter(df, N > 10),
+  geom_smooth(#aes(color = basin, fill = basin),
+              #data = function(df) filter(df, N > 10),
               size = graphic.size) +
-  scale_color_hue(drop = FALSE) +
-  scale_fill_hue(drop = FALSE) +
+  # scale_color_hue(drop = TRUE) +
+  # scale_fill_hue(drop = TRUE) +
   coord_cartesian(ylim = c(0, 1)) +
   scale_y_continuous(breaks = c(0, 0.5, 1)) +
   labs(x = "interval (days)", y = "correlation") +
-  facet_grid(paste(subject, event, sep = ", ") ~ .) +
+  # facet_grid(paste(subject, event, sep = ", ") ~ .) +
+  facet_wrap(~ paste(subject, event) + basin) +
   theme(strip.text.y = element_text(angle = 0))
 correlation <- last_plot()
 

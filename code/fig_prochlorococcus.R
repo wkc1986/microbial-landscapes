@@ -193,4 +193,7 @@ ggplot(consecutive, aes(x = potential.x, y = displacement / delta.month)) +
   # scale_color_distiller(palette = "Blues") +
   # scale_x_log10() +
   ggtitle(paste("Pearson =", emp.pearson))
-
+null.pearsons <- sapply(null.data, get.cor)
+ggplot(data.frame(null.pearsons), aes(x = null.pearsons)) +
+  geom_histogram() +
+  geom_vline(xintercept = emp.pearson, color = "blue")
