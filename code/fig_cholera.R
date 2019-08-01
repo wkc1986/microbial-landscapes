@@ -26,7 +26,7 @@ plotter <- function(v) {
     guides(size = FALSE) +
     coord_equal()
 }
-basin.palette <- "Set3"
+basin.palette <- "Paired"
 na.color <- "grey50"
 
 # fraction diarrhea -------------------------------------------------------
@@ -39,7 +39,8 @@ fstate <- last_plot()
 # basins ------------------------------------------------------------------
 
 plotter(~as.factor(basin)) +
-  scale_fill_brewer(palette = basin.palette, na.value = na.color)
+  scale_fill_brewer(palette = basin.palette, na.value = na.color) +
+  labs(fill = "state")
 basin <- last_plot()
 
 # basin time series -------------------------------------------------------

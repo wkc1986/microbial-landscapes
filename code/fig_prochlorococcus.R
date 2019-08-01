@@ -55,7 +55,7 @@ depth <- last_plot()
 # basins ------------------------------------------------------------------
 
 plotter(~as.factor(basin))  +
-  labs(fill = "basin")
+  labs(fill = "state")
 basins <- last_plot()
 
 
@@ -149,7 +149,7 @@ correlation <- last_plot()
 plot_grid(plot_grid(depth, basins, ncol = 2, labels = c("A", "B")),
           plot_grid(series, correlation, nrow = 2, align = "v", labels = c("C", "D")),
           ncol = 1, rel_heights = c(2, 3))
-save_plot(paste0(figs.dir, "fig4.pdf"), last_plot(), ncol = 2,
+save_plot(paste0(figs.dir, "fig5.pdf"), last_plot(), ncol = 2,
           base_width = 4, base_height = 10)
 
 

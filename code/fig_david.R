@@ -132,10 +132,12 @@ david.sample.basins %>%
                                    "A travel + diarrhea 2",
                                    "B pre-Salmonella", "B post-Salmonella",
                                    "B Salmonella"))) %>%
+  filter(label %in% c("A US (pre)", "A US (post)",
+                      "B pre-Salmonella", "B post-Salmonella")) %>%
   filter(!is.na(basin)) %>%
   ggplot(aes(x = basin, y = frac)) +
   geom_col() +
-  facet_wrap(~ label, dir = "v", nrow = 5) +
+  facet_wrap(~ label, dir = "v", nrow = 2) +
   labs(x = "state", y = "frequency") +
   scale_y_continuous(breaks = c(0, 0.4)) +
   theme(axis.text.x = element_blank())
@@ -168,34 +170,63 @@ theme_set(theme_cowplot() + theme(#legend.position = "none",
                                   axis.text = element_text(size = title.size),
                                   axis.title = element_text(size = title.size),
                                   strip.text = element_text(size = title.size)))
-graphic.size <- 0.5
-ggplot(david.persistence[!is.na(basin) & healthy],
-       aes(x = delta.t, y = f)) +
-  geom_point(#data = function(df) filter(df, N <= 10),
-             alpha = 0.5, size = graphic.size) +
-  geom_smooth(#aes(color = basin, fill = basin),
-              #data = function(df) filter(df, N > 10),
-              size = graphic.size) +
-  # scale_color_hue(drop = TRUE) +
-  # scale_fill_hue(drop = TRUE) +
+graphic.size <- 1
+plot.correlation <- function(df) {
+  ggplot(df, aes(x = delta.t, y = f)) +
+  geom_point(size = graphic.size / 5) +
+  geom_smooth(size = graphic.size) +
+  scale_color_brewer(palette = "Paired", drop = TRUE) +
+  scale_fill_brewer(palette = "Paired", drop = TRUE) +
   coord_cartesian(ylim = c(0, 1)) +
   scale_y_continuous(breaks = c(0, 0.5, 1)) +
-  labs(x = "interval (days)", y = "correlation") +
+  labs(x = "interval (days)", y = "correlation", color = "state", fill = "state") +
   # facet_grid(paste(subject, event, sep = ", ") ~ .) +
-  facet_wrap(~ paste(subject, event) + basin) +
+  facet_wrap(~ state, dir = "v") +
   theme(strip.text.y = element_text(angle = 0))
+}
+david.persistence[!is.na(basin) & healthy & event != "travel"] %>%
+  filter(!is.na(basin)) %>%
+  filter(healthy) %>%
+  filter(event != "travel") %>%
+  mutate(label = paste(subject, event)) %>%
+  mutate(label = factor(label, levels = c("A US (pre)", "A US (post)",
+                                          "B pre-Salmonella", "B post-Salmonella"))) %>%
+  mutate(state = factor(paste("state", basin),
+                        levels = paste("state", levels(basin)))) %>%
+  # split(.$label) %>%
+  # lapply(plot.correlation)
+  ggplot(aes(x = delta.t, y = f)) +
+  geom_point(aes(color = state), size = graphic.size / 5) +
+  geom_smooth(aes(color = state, fill = state), size = graphic.size) +
+  scale_color_brewer(palette = "Paired", drop = TRUE) +
+  scale_fill_brewer(palette = "Paired", drop = TRUE) +
+  coord_cartesian(ylim = c(0, 1)) +
+  scale_y_continuous(breaks = c(0, 0.5, 1)) +
+  labs(x = "interval (days)", y = "correlation", color = "state", fill = "state") +
+  # facet_grid(paste(subject, event, sep = ", ") ~ .) +
+  facet_wrap(~ label, ncol = 2, dir = "v") +
+  theme(strip.text.y = element_text(angle = 0))
+# plist <- mapply(function(g, l) g + ggtitle(l), g = plist, l = names(plist),
+#                 SIMPLIFY = FALSE)
+# plot_grid(plist[[1]], plist[[3]], plist[[2]], plist[[4]], nrow = 2)
 correlation <- last_plot()
 
 
 # compiled ----------------------------------------------------------------
 
-plot_grid(fsubject, events,
-          basins, plot_grid(distribs, correlation, nrow = 2),
-          ncol = 2, rel_heights = c(2, 3), labels = "AUTO")
+# plot_grid(fsubject, events,
+#           basins, plot_grid(distribs, correlation, nrow = 2),
+#           ncol = 2, rel_heights = c(2, 3), labels = "AUTO")
+plot_grid(fsubject, events, ncol = 2, labels = "AUTO")
 save_plot(paste0(figs.dir, "/fig3.pdf"), last_plot(), ncol = 2,
-          base_width = 4, base_height = 8)
-
-
+          base_width = 4, base_height = 3)
+plot_grid(distribs, correlation, nrow = 2, labels = "AUTO", align = "v",
+          axis = "lr")
+save_plot(paste0(figs.dir, "/fig4.pdf"), last_plot(), nrow = 1,
+          base_width = 8, base_height = 6)
+basins
+save_plot(paste0(figs.dir, "/sup_fig1.pdf"), last_plot(), base_width = 8,
+          base_height = 6)
 # event vertex distribution -----------------------------------------------
 
 theme_set(theme_cowplot())
