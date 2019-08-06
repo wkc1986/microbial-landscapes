@@ -134,51 +134,26 @@ plot_grid(plot_grid(fstate, basin,
 save_plot(last_plot(), filename = paste0(figs.dir, "/fig2.pdf"),
           ncol = 1, base_width = 8, base_height = 8)
 
-# event vertex distribution -----------------------------------------------
-
-vd <- vertex.distribution(cholera.v2p$vertex, cholera.v2p[, .(subject, diagnosis)])
-ggplot(vd, aes(x = vertex)) +
-  geom_col(aes(y = f, fill = diagnosis)) +
-  facet_wrap(~subject, scales = "free_y")
-
-state <- paste(vd$diagnosis, vd$subject)
-sd <- state.divergence(vd$f, vd$vertex, state)
-ggplot(sd, aes(x = state.x, y = state.y)) +
-  geom_tile(aes(fill = JSD)) +
-  scale_fill_distiller(palette = "Greys")
-
-
-# correlation between quasipotential and rate of change -------------------
-
-consecutive.samples <- gordon.samples %>%
-  split(by = "subject") %>%
-  lapply(function(df) pair.consecutive(df$sample, df$hour)) %>%
-  rbindlist(idcol = "subject")
-consecutive.samples[, delta.hour := time.y - time.x]
-consecutive.samples <- merge(consecutive.samples, jsd)
-consecutive.samples[, roc := jsd / delta.hour]
-ggplot(consecutive.samples[delta.hour <= 24], aes(x = delta.hour, y = jsd)) +
-  geom_point(aes(color = subject)) +
-  scale_y_log10()
+# correlation between starting knn and change -----------------------------
 
 # make distance matrix and knn
-dm <- dlist2dm(jsd$sample.x, jsd$sample.y, jsd$jsd)
+dm <- dlist2dm(jsd$sample.x, jsd$sample.y, sqrt(jsd$jsd))
 knn <- dist2knn(dm, round(nrow(dm) / 10))
 knn <- data.frame(sample = names(knn), knn = knn)
-# recalculate potential for each point from vertex potential
-# potential <- cholera.v2p[, .(potential = mean(scaled.knn)), by = point]
-
-consecutive.samples <- merge(consecutive.samples, knn, by.x = "sample.x",
-                             by.y = "sample")
-consecutive.samples <- merge(consecutive.samples, knn, by.x = "sample.y",
-                             by.y = "sample")
-ggplot(consecutive.samples[delta.hour <= 24], aes(x = knn.x, y = sqrt(jsd) / delta.hour)) +
-  geom_point(aes(color = subject)) #+
-  # scale_y_log10()
-
-
-# frequency in jumps of decreasing or increasing knn ----------------------
-
-consecutive.samples[, delta.knn := knn.y - knn.x]
-ggplot(consecutive.samples, aes(x = delta.knn / delta.hour)) +
-  stat_ecdf(aes(color = subject))
+gordon.samples <- merge(gordon.samples, knn, by = "sample")
+emp.cor <- gordon.samples %>%
+  group_by(subject, diagnosis) %>%
+  summarise(pearson = knn.test(sample, hour, knn))
+nnulls <- 100
+null.cor <- lapply(seq(nnulls), function(i) {
+  gordon.samples %>%
+    group_by(subject, diagnosis) %>%
+    mutate(hour = sample(hour)) %>%
+    summarise(pearson = knn.test(sample, hour, knn))
+})
+null.cor <- rbindlist(null.cor, idcol = "iteration")
+ggplot(null.cor, aes(x = pearson)) +
+  geom_histogram() +
+  geom_vline(aes(xintercept = pearson), data = emp.cor, color = "blue") +
+  facet_grid(subject ~ diagnosis)
+save_plot(paste0(figs.dir, "/sup_fig6.pdf"), last_plot(), base_width = 8)

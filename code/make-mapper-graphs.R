@@ -278,7 +278,7 @@ plot.fstate.valid <- function(g) {
 pl <- batch.plot(subsets, plot.fstate.valid)
 plot_grid(plotlist = pl, ncol = 1, labels = rs)
 pl.cholera.validate <- last_plot()
-write.validation.plot(paste0(figs.dir, 'sup_fig1.pdf'), last_plot())
+write.validation.plot(paste0(figs.dir, 'sup_fig3.pdf'), last_plot())
 
 # assign minima and basins
 mpr$graph <- mpr$graph %>% mutate(scaled.knn = mean.knn / size)
@@ -374,7 +374,7 @@ p2 <- function(g) {
 pl <- batch.plot(subsets, p2)
 plot_grid(plotlist = pl, ncol = 1, labels = rs)
 pl.david.validate <- last_plot()
-write.validation.plot(paste0(figs.dir, 'sup_fig2.pdf'), last_plot())
+write.validation.plot(paste0(figs.dir, 'sup_fig4.pdf'), last_plot())
 
 #' Find basins of attraction:
 mpr$graph <- mpr$graph %>%
@@ -470,7 +470,7 @@ p2 <- function(g) {
 pl <- batch.plot(subsets, p2)
 plot_grid(plotlist = pl, ncol = 1, labels = rs)
 pl.proc.validate <- last_plot()
-write.validation.plot(paste0(figs.dir, 'sup_fig3.pdf'), last_plot())
+write.validation.plot(paste0(figs.dir, 'sup_fig5.pdf'), last_plot())
 
 mpr$graph <- assign.basins(mpr$graph, "scaled.knn", ignore.singletons = TRUE)
 mpr$graph <- mpr$graph %>%
