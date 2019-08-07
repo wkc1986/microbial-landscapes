@@ -1,4 +1,4 @@
-knn.test <- function(sample, time, knn) {
+knn.test <- function(sample, time, knn, correlate = TRUE) {
   # source("pair.consecutive.R")
   consec <- pair.consecutive(sample, time)
   consec <- mutate(consec,
@@ -10,5 +10,9 @@ knn.test <- function(sample, time, knn) {
                    knn.x = knn[sample.x],
                    knn.y = knn[sample.y],
                    delta.knn = knn.y - knn.x)
-  cor(consec$knn.x, consec$delta.knn)
+  if (correlate) {
+    cor(consec$knn.x, consec$delta.knn)
+  } else {
+    consec
+  }
 }
