@@ -157,3 +157,35 @@ ggplot(null.cor, aes(x = pearson)) +
   geom_vline(aes(xintercept = pearson), data = emp.cor, color = "blue") +
   facet_grid(subject ~ diagnosis)
 save_plot(paste0(figs.dir, "/sup_fig6.pdf"), last_plot(), base_width = 8)
+
+
+# fraction diarrhea per state ---------------------------------------------
+
+cholera.v2p %>%
+  group_by(basin) %>%
+  summarize(f.state = mean(f.state)) %>%
+  mutate(basin = factor(basin, levels = as.character(sort(basin)))) %>%
+  ggplot(aes(x = basin, y = f.state)) +
+  geom_col() +
+  labs(x = "state", y = "fraction diarrhea")
+ggsave("../figures/sup_fig_fdiarrhea.pdf", width = 7, height = 5)
+
+
+# state taxonomic profile -------------------------------------------------
+
+taxonomy <- read.taxonomy("../data/cholera/gordon.otu.taxonomy")
+gordon <- merge(gordon, taxonomy, by = "otu")
+# gordon[, relative.abundance := count / sum(count), by = sample]
+sample.profiles <- gordon[, .(count = sum(count)),
+                          by = .(sample, kingdom, phylum, class, order, family, genus)]
+vertex.profiles <- merge(sample.profiles, cholera.mapper$mapping,
+                         by.x = "sample", by.y = "point", allow.cartesian = TRUE) %>%
+  group_by(vertex, kingdom, phylum, class, order, family, genus) %>%
+  summarize(count = mean(count))
+state.profiles <- cholera.mapper$graph %>%
+  activate(nodes) %>%
+  merge(vertex.profiles, by = "vertex") %>%
+  group_by(basin, kingdom, phylum, class, order, family, genus) %>%
+  summarize(count = mean(count)) %>%
+  group_by(basin) %>%
+  mutate(relative.abundance = count / sum(count))

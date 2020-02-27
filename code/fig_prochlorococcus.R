@@ -177,3 +177,13 @@ ggplot(null.cor, aes(x = pearson)) +
   scale_y_continuous(breaks = c(0, 10, 20)) +
   geom_vline(aes(xintercept = pearson), data = emp.cor, color = "blue")
 save_plot(paste0(figs.dir, "/sup_fig8.pdf"), last_plot(), base_width = 8)
+
+# mean depth per state ----------------------------------------------------
+
+prochlorococcus.v2p %>%
+  group_by(basin) %>%
+  summarize(mean.depth = mean(mean.depth)) %>%
+  ggplot(aes(x = basin, y = mean.depth)) +
+  geom_col() +
+  labs(x = "state", y = "mean depth (m)")
+ggsave("../figures/sup_fig_meandepth.pdf", width = 7, height = 5)

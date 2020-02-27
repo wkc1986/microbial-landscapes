@@ -256,3 +256,13 @@ ggplot(null.cor, aes(x = pearson)) +
   facet_wrap(~ subject + event)
 save_plot(paste0(figs.dir, "/sup_fig7.pdf"), last_plot(), base_width = 8,
           base_height = 6)
+
+# fraction subject for each state -----------------------------------------
+
+david.v2p %>%
+  group_by(basin) %>%
+  summarize(f.subject = mean(f.subject)) %>%
+  ggplot(aes(x = basin, y = f.subject)) +
+  geom_col() +
+  labs(x = "state", y = "fraction subject A")
+ggsave("../figures/sup_fig_fsubject.pdf", width = 7, height = 5)
