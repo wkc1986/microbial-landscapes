@@ -188,4 +188,7 @@ state.profiles <- cholera.mapper$graph %>%
   group_by(basin, kingdom, phylum, class, order, family, genus) %>%
   summarize(count = mean(count)) %>%
   group_by(basin) %>%
-  mutate(relative.abundance = count / sum(count))
+  mutate(relative.abundance = count / sum(count)) %>%
+  mutate(count = NULL)
+fwrite(state.profiles, "../data/supplemental-data/cholera-state-compositions.txt",
+       sep = "\t")
