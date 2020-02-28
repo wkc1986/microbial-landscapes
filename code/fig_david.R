@@ -266,3 +266,25 @@ david.v2p %>%
   geom_col() +
   labs(x = "state", y = "fraction subject A")
 ggsave("../figures/sup_fig_fsubject.pdf", width = 7, height = 5)
+
+
+# mean taxon composition for each state -----------------------------------
+
+taxonomy <- read.taxonomy("../data/david/david.otu.taxonomy")
+sample.counts <- merge(david, taxonomy, by = "otu") %>%
+  group_by(sample, kingdom, phylum, class, order, family, genus) %>%
+  summarize(count = sum(count))
+state.profiles <- merge(david.v2p, sample.counts,
+                        by.x = "point", by.y = "sample", allow.cartesian = TRUE) %>%
+  group_by(basin, kingdom, phylum, class, order, family, genus) %>%
+  summarize(count = sum(count)) %>%
+  group_by(basin) %>%
+  mutate(relative.abundance = count / sum(count)) %>%
+  mutate(count = NULL) %>%
+  as.data.table %>%
+  setnames("basin", "state")
+if (!dir.exists("../data/supplemental-data/")) {
+  dir.create("../data/supplemental-data/")
+}
+fwrite(state.profiles, "../data/supplemental-data/david-state-compositions.txt",
+       sep = "\t", na = "NA")

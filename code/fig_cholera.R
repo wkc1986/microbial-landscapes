@@ -189,9 +189,11 @@ state.profiles <- cholera.mapper$graph %>%
   summarize(count = mean(count)) %>%
   group_by(basin) %>%
   mutate(relative.abundance = count / sum(count)) %>%
-  mutate(count = NULL)
+  mutate(count = NULL) %>%
+  as.data.table %>%
+  setnames("basin", "state")
 if (!dir.exists("../data/supplemental-data/")) {
   dir.create("../data/supplemental-data/")
 }
 fwrite(state.profiles, "../data/supplemental-data/cholera-state-compositions.txt",
-       sep = "\t")
+       sep = "\t", na = "NA")

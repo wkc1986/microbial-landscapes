@@ -187,3 +187,19 @@ prochlorococcus.v2p %>%
   geom_col() +
   labs(x = "state", y = "mean depth (m)")
 ggsave("../figures/sup_fig_meandepth.pdf", width = 7, height = 5)
+
+# mean composition per state ----------------------------------------------
+
+state.profiles <- merge(p2basin, prochlorococcus,
+                        by = c("site", "depth", "month", "day", "cal.month")) %>%
+  group_by(basin, ecotype) %>%
+  summarize(abundance = sum(abundance)) %>%
+  group_by(basin) %>%
+  mutate(relative.abundance = abundance / sum(abundance)) %>%
+  select(basin, ecotype, relative.abundance)
+if (!dir.exists("../data/supplemental-data/")) {
+  dir.create("../data/supplemental-data/")
+}
+fwrite(state.profiles,
+       "../data/supplemental-data/prochlorococcus-state-compositions.txt",
+       sep = "\t", na = "NA")
